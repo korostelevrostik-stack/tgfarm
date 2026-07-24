@@ -1,0 +1,46 @@
+# keyboards.py
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from config import CROP_DATA, ANIMAL_DATA
+
+def main_menu():
+    """Главное меню"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🌱 Посадить", callback_data="plant")],
+        [InlineKeyboardButton(text="🧺 Собрать урожай", callback_data="harvest")],
+        [InlineKeyboardButton(text="🐄 Купить животное", callback_data="buy_animal")],
+        [InlineKeyboardButton(text="🥚 Собрать продукцию", callback_data="animal_products")],
+        [InlineKeyboardButton(text="⏩ Следующий день", callback_data="next_day")],
+        [InlineKeyboardButton(text="📊 Статистика", callback_data="stats")]
+    ])
+
+def crop_menu():
+    """Меню выбора культур для посадки"""
+    buttons = []
+    for crop, data in CROP_DATA.items():
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"{crop} ({data['cost']}$)", 
+                callback_data=f"plant_{crop}"
+            )
+        ])
+    buttons.append([InlineKeyboardButton(text="🔙 Назад", callback_data="back")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def animal_menu():
+    """Меню выбора животных для покупки"""
+    buttons = []
+    for animal, data in ANIMAL_DATA.items():
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"{animal} ({data['cost']}$)", 
+                callback_data=f"buy_{animal}"
+            )
+        ])
+    buttons.append([InlineKeyboardButton(text="🔙 Назад", callback_data="back")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def back_button():
+    """Только кнопка назад"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back")]
+    ])
