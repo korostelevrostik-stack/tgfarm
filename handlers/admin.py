@@ -222,6 +222,12 @@ async def reset_all(message: types.Message):
         p.crops = {c: 0 for c in p.crops}
         p.animals = {a: 0 for a in p.animals}
         p.day = 1
+        p.total_sold = {}
+        p.unlocked_crops = []
+        # Разблокируем стартовые культуры
+        for crop, data in CROP_DATA.items():
+            if data.get("unlock_requirement", 0) == 0:
+                p.unlocked_crops.append(crop)
     await message.answer("✅ Все сброшены!")
 
 async def list_players(message: types.Message):
@@ -229,7 +235,8 @@ async def list_players(message: types.Message):
         return
     text = "👤 Игроки:\n"
     for uid, p in players.items():
-        text += f"ID: {uid} | 💰 {p.money}$ | День {p.day}\n"
+        unlocked_count = len(p.unlocked_crops)
+        text += f"ID: {uid} | 💰 {p.money}$ | День {p.day} | 🔓 {unlocked_count} культур\n"
     await message.answer(text)
 
 def register_admin(dp):
