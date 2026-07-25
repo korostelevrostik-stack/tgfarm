@@ -7,7 +7,7 @@ import time
 # ========== СИСТЕМА МУТАЦИЙ ==========
 class MutationSystem:
     def __init__(self):
-        self.active_mutations = {}  # {название: {тип, множитель, время}}
+        self.active_mutations = {}
         self.mutation_types = {
             "клубничная": {"emoji": "🍓", "multiplier": 2.0, "desc": "урожайность x2"},
             "ядовитая": {"emoji": "☠️", "multiplier": 0.5, "desc": "урожайность x0.5 (для врагов)"},
@@ -31,33 +31,23 @@ class MutationSystem:
             "древняя": {"emoji": "🏛️", "multiplier": 15.0, "desc": "урожайность x15! (мифическая)"}
         }
         self.private_mutations = {}
-    
-    def apply_mutation(self, crop_price, mutation_name):
-        """Применить мутацию к цене"""
-        if mutation_name in self.mutation_types:
-            return int(crop_price * self.mutation_types[mutation_name]["multiplier"])
-        return crop_price
-    
+
     def get_active_mutations_text(self):
-        """Получить текст активных мутаций"""
         if not self.active_mutations and not self.private_mutations:
             return "🔴 Нет активных мутаций"
-        
         text = ""
         if self.active_mutations:
             text += "🧬 **Глобальные мутации:**\n"
-            for name, data in self.active_mutations.items():
+            for name in self.active_mutations:
                 emoji = self.mutation_types[name]["emoji"]
                 mult = self.mutation_types[name]["multiplier"]
                 text += f"{emoji} {name}: x{mult} (для всех)\n"
-        
         if self.private_mutations:
             text += "\n👑 **Личные мутации:**\n"
-            for name, data in self.private_mutations.items():
+            for name in self.private_mutations:
                 emoji = self.mutation_types[name]["emoji"]
                 mult = self.mutation_types[name]["multiplier"]
                 text += f"{emoji} {name}: x{mult} (только для админа)\n"
-        
         return text
 
 mutation_system = MutationSystem()
@@ -65,9 +55,7 @@ mutation_system = MutationSystem()
 async def admin_panel(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
-    
     mutations_text = mutation_system.get_active_mutations_text()
-    
     await message.answer(
         f"👑 **Админ-панель**\n\n"
         f"👤 Игроков: {len(players)}\n"
@@ -86,36 +74,28 @@ async def admin_panel(message: types.Message):
     )
 
 async def global_mutate(message: types.Message):
-    """Запустить мутацию для всех"""
     if message.from_user.id != ADMIN_ID:
         return
-    
     try:
         parts = message.text.split()
         if len(parts) < 2:
             await message.answer(
                 "❌ Использование: /global_mutate <название>\n"
-                "Доступные мутации:\n" + 
-                "\n".join([f"{data['emoji']} {name} (x{data['multiplier']})" 
+                "Доступные мутации:\n" +
+                "\n".join([f"{data['emoji']} {name} (x{data['multiplier']})"
                           for name, data in mutation_system.mutation_types.items()])
             )
             return
-        
         mutation_name = parts[1].lower()
         if mutation_name not in mutation_system.mutation_types:
             await message.answer(f"❌ Мутация '{mutation_name}' не найдена!")
             return
-        
-        # Активируем мутацию для всех
         mutation_system.active_mutations[mutation_name] = {
             "started": time.time(),
             "multiplier": mutation_system.mutation_types[mutation_name]["multiplier"]
         }
-        
         emoji = mutation_system.mutation_types[mutation_name]["emoji"]
         mult = mutation_system.mutation_types[mutation_name]["multiplier"]
-        
-        # Отправляем уведомление всем игрокам
         for user_id in players.keys():
             try:
                 await message.bot.send_message(
@@ -126,83 +106,66 @@ async def global_mutate(message: types.Message):
                 )
             except:
                 pass
-        
         await message.answer(
             f"✅ **Глобальная мутация активирована!**\n"
             f"{emoji} {mutation_name} x{mult}\n"
             f"⏳ Действует 1 час (или пока не отключишь)"
         )
-        
     except Exception as e:
         await message.answer(f"❌ Ошибка: {e}")
 
 async def private_mutate(message: types.Message):
-    """Запустить мутацию только для админа"""
     if message.from_user.id != ADMIN_ID:
         return
-    
     try:
         parts = message.text.split()
         if len(parts) < 2:
             await message.answer(
                 "❌ Использование: /private_mutate <название>\n"
-                "Доступные мутации:\n" + 
-                "\n".join([f"{data['emoji']} {name} (x{data['multiplier']})" 
+                "Доступные мутации:\n" +
+                "\n".join([f"{data['emoji']} {name} (x{data['multiplier']})"
                           for name, data in mutation_system.mutation_types.items()])
             )
             return
-        
         mutation_name = parts[1].lower()
         if mutation_name not in mutation_system.mutation_types:
             await message.answer(f"❌ Мутация '{mutation_name}' не найдена!")
             return
-        
         mutation_system.private_mutations[mutation_name] = {
             "started": time.time(),
             "multiplier": mutation_system.mutation_types[mutation_name]["multiplier"]
         }
-        
         emoji = mutation_system.mutation_types[mutation_name]["emoji"]
         mult = mutation_system.mutation_types[mutation_name]["multiplier"]
-        
         await message.answer(
             f"✅ **Личная мутация активирована!**\n"
             f"{emoji} {mutation_name} x{mult}\n"
             f"⏳ Только для тебя!"
         )
-        
     except Exception as e:
         await message.answer(f"❌ Ошибка: {e}")
 
 async def list_mutations(message: types.Message):
-    """Показать все доступные мутации"""
     if message.from_user.id != ADMIN_ID:
         return
-    
     text = "🧬 **Доступные мутации:**\n\n"
     for name, data in mutation_system.mutation_types.items():
         text += f"{data['emoji']} **{name}**: x{data['multiplier']} — {data['desc']}\n"
-    
     await message.answer(text, parse_mode="Markdown")
 
 async def clear_all_mutations(message: types.Message):
-    """Очистить все мутации"""
     if message.from_user.id != ADMIN_ID:
         return
-    
     mutation_system.active_mutations.clear()
     mutation_system.private_mutations.clear()
     await message.answer("✅ Все мутации очищены!")
 
 async def show_active_mutations(message: types.Message):
-    """Показать активные мутации"""
     if message.from_user.id != ADMIN_ID:
         return
-    
     text = mutation_system.get_active_mutations_text()
     await message.answer(text, parse_mode="Markdown")
 
-# ========== ОСТАЛЬНЫЕ АДМИН-КОМАНДЫ ==========
 async def give_all_money(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         return
@@ -224,9 +187,8 @@ async def reset_all(message: types.Message):
         p.day = 1
         p.total_sold = {}
         p.unlocked_crops = []
-        # Разблокируем стартовые культуры
         for crop, data in CROP_DATA.items():
-            if data.get("unlock_requirement", 0) == 0:500
+            if data.get("unlock_requirement", 0) == 0:
                 p.unlocked_crops.append(crop)
     await message.answer("✅ Все сброшены!")
 
