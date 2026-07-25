@@ -5,23 +5,116 @@ load_dotenv()
 
 TOKEN = os.getenv("BOT_TOKEN", "8973072159:AAHHqRXaDePf6qmB3muzfKypKh4JBOHWCFo")
 
-START_MONEY = 500
+START_MONEY = 300
 FOOD_COST_PER_ANIMAL = 15
 SELL_ANIMAL_PRICE = 50
 
 CROP_DATA = {
-    "🌾Пшеница": {"cost": 50, "sell": 80, "min_yield": 5, "max_yield": 15, "emoji": "🌾"},
-    "🌽Кукуруза": {"cost": 80, "sell": 150, "min_yield": 5, "max_yield": 15, "emoji": "🌽"},
-    "🍅Помидоры": {"cost": 120, "sell": 250, "min_yield": 5, "max_yield": 15, "emoji": "🍅"}
+    "🌾Пшеница": {"cost": 50, "min_yield": 5, "max_yield": 15, "emoji": "🌾"},
+    "🌽Кукуруза": {"cost": 80, "min_yield": 5, "max_yield": 15, "emoji": "🌽"},
+    "🍅Помидоры": {"cost": 120, "min_yield": 5, "max_yield": 15, "emoji": "🍅"},
+    "🥔Картофель": {"cost": 60, "min_yield": 8, "max_yield": 20, "emoji": "🥔"},
+    "🥕Морковь": {"cost": 70, "min_yield": 6, "max_yield": 18, "emoji": "🥕"},
+    "🍓Клубника": {"cost": 150, "min_yield": 4, "max_yield": 10, "emoji": "🍓"},
+    "🧅Лук": {"cost": 40, "min_yield": 10, "max_yield": 25, "emoji": "🧅"},
+    "🌶️Перец": {"cost": 90, "min_yield": 5, "max_yield": 12, "emoji": "🌶️"},
+    "🍆Баклажан": {"cost": 100, "min_yield": 4, "max_yield": 10, "emoji": "🍆"},
+    "🥦Брокколи": {"cost": 110, "min_yield": 5, "max_yield": 12, "emoji": "🥦"},
+    "🌿Салат": {"cost": 30, "min_yield": 10, "max_yield": 30, "emoji": "🌿"},
+    "🍉Арбуз": {"cost": 200, "min_yield": 2, "max_yield": 5, "emoji": "🍉"},
+    "🍇Виноград": {"cost": 180, "min_yield": 3, "max_yield": 8, "emoji": "🍇"},
+    "🍑Персик": {"cost": 160, "min_yield": 3, "max_yield": 7, "emoji": "🍑"},
+    "🍋Лимон": {"cost": 130, "min_yield": 4, "max_yield": 10, "emoji": "🍋"},
+    "🥭Манго": {"cost": 220, "min_yield": 2, "max_yield": 5, "emoji": "🥭"},
+    "🍍Ананас": {"cost": 250, "min_yield": 2, "max_yield": 4, "emoji": "🍍"},
+    "🥑Авокадо": {"cost": 300, "min_yield": 2, "max_yield": 4, "emoji": "🥑"},
+    "🍌Банан": {"cost": 140, "min_yield": 4, "max_yield": 8, "emoji": "🍌"},
+    "🍎Яблоко": {"cost": 100, "min_yield": 5, "max_yield": 12, "emoji": "🍎"},
+    "🍐Груша": {"cost": 120, "min_yield": 4, "max_yield": 10, "emoji": "🍐"},
+    "🍒Вишня": {"cost": 150, "min_yield": 4, "max_yield": 8, "emoji": "🍒"},
+    "🍊Апельсин": {"cost": 130, "min_yield": 4, "max_yield": 10, "emoji": "🍊"},
+    "🍈Дыня": {"cost": 190, "min_yield": 2, "max_yield": 5, "emoji": "🍈"},
+    "🥝Киви": {"cost": 160, "min_yield": 3, "max_yield": 7, "emoji": "🥝"},
+    "🍄Грибы": {"cost": 80, "min_yield": 6, "max_yield": 15, "emoji": "🍄"},
+    "🌻Подсолнух": {"cost": 50, "min_yield": 8, "max_yield": 20, "emoji": "🌻"},
+    "🌹Роза": {"cost": 200, "min_yield": 3, "max_yield": 7, "emoji": "🌹"},
+    "🌺Тюльпан": {"cost": 150, "min_yield": 4, "max_yield": 8, "emoji": "🌺"},
+    "🌸Сакура": {"cost": 300, "min_yield": 2, "max_yield": 4, "emoji": "🌸"},
+    "🌿Мята": {"cost": 40, "min_yield": 12, "max_yield": 30, "emoji": "🌿"},
+    "🌱Бамбук": {"cost": 70, "min_yield": 8, "max_yield": 20, "emoji": "🌱"},
+    "🍀Клевер": {"cost": 30, "min_yield": 15, "max_yield": 35, "emoji": "🍀"},
+    "🌾Рис": {"cost": 40, "min_yield": 10, "max_yield": 25, "emoji": "🌾"},
+    "🫘Соя": {"cost": 60, "min_yield": 8, "max_yield": 20, "emoji": "🫘"},
+    "🫛Горох": {"cost": 50, "min_yield": 10, "max_yield": 25, "emoji": "🫛"},
+    "🥜Арахис": {"cost": 70, "min_yield": 6, "max_yield": 15, "emoji": "🥜"},
+    "🌰Каштан": {"cost": 180, "min_yield": 3, "max_yield": 7, "emoji": "🌰"},
+    "🌽Сладкая кукуруза": {"cost": 100, "min_yield": 5, "max_yield": 12, "emoji": "🌽"},
+    "🍠Батат": {"cost": 80, "min_yield": 6, "max_yield": 15, "emoji": "🍠"},
+    "🥬Капуста": {"cost": 50, "min_yield": 10, "max_yield": 25, "emoji": "🥬"},
+    "🥒Огурец": {"cost": 70, "min_yield": 6, "max_yield": 15, "emoji": "🥒"},
+    "🫑Болгарский перец": {"cost": 90, "min_yield": 5, "max_yield": 12, "emoji": "🫑"},
+    "🧄Чеснок": {"cost": 60, "min_yield": 8, "max_yield": 20, "emoji": "🧄"},
+    "🫚Имбирь": {"cost": 100, "min_yield": 5, "max_yield": 12, "emoji": "🫚"},
+    "🌶️Чили": {"cost": 80, "min_yield": 6, "max_yield": 15, "emoji": "🌶️"},
+    "🥝Зелёный киви": {"cost": 140, "min_yield": 4, "max_yield": 8, "emoji": "🥝"},
+    "🫐Голубика": {"cost": 180, "min_yield": 4, "max_yield": 8, "emoji": "🫐"},
+    "🍒Черешня": {"cost": 160, "min_yield": 3, "max_yield": 7, "emoji": "🍒"},
+    "🥬Пекинская капуста": {"cost": 45, "min_yield": 10, "max_yield": 25, "emoji": "🥬"}
 }
 
 ANIMAL_DATA = {
     "🐔Куры": {"cost": 200, "product": "🥚", "min_prod": 1, "max_prod": 3, "price_per_unit": 10, "emoji": "🐔"},
     "🐄Коровы": {"cost": 500, "product": "🥛", "min_prod": 2, "max_prod": 5, "price_per_unit": 20, "emoji": "🐄"},
-    "🐑Овцы": {"cost": 400, "product": "🧶", "min_prod": 1, "max_prod": 2, "price_per_unit": 30, "emoji": "🐑"}
+    "🐑Овцы": {"cost": 400, "product": "🧶", "min_prod": 1, "max_prod": 2, "price_per_unit": 30, "emoji": "🐑"},
+    "🐖Свиньи": {"cost": 300, "product": "🥩", "min_prod": 1, "max_prod": 2, "price_per_unit": 50, "emoji": "🐖"},
+    "🐐Козы": {"cost": 350, "product": "🥛", "min_prod": 2, "max_prod": 4, "price_per_unit": 25, "emoji": "🐐"},
+    "🦆Утки": {"cost": 150, "product": "🥚", "min_prod": 2, "max_prod": 4, "price_per_unit": 8, "emoji": "🦆"},
+    "🐇Кролики": {"cost": 100, "product": "🧶", "min_prod": 1, "max_prod": 3, "price_per_unit": 15, "emoji": "🐇"},
+    "🐝Пчёлы": {"cost": 250, "product": "🍯", "min_prod": 3, "max_prod": 6, "price_per_unit": 35, "emoji": "🐝"},
+    "🦃Индейки": {"cost": 450, "product": "🥚", "min_prod": 1, "max_prod": 2, "price_per_unit": 40, "emoji": "🦃"},
+    "🐴Лошади": {"cost": 600, "product": "💨", "min_prod": 1, "max_prod": 2, "price_per_unit": 60, "emoji": "🐴"},
+    "🐫Верблюды": {"cost": 700, "product": "🥛", "min_prod": 1, "max_prod": 3, "price_per_unit": 45, "emoji": "🐫"},
+    "🦙Ламы": {"cost": 550, "product": "🧶", "min_prod": 1, "max_prod": 3, "price_per_unit": 35, "emoji": "🦙"},
+    "🐂Быки": {"cost": 800, "product": "🥩", "min_prod": 1, "max_prod": 2, "price_per_unit": 70, "emoji": "🐂"},
+    "🐃Буйволы": {"cost": 900, "product": "🥛", "min_prod": 1, "max_prod": 3, "price_per_unit": 50, "emoji": "🐃"},
+    "🦌Олени": {"cost": 650, "product": "🧶", "min_prod": 1, "max_prod": 2, "price_per_unit": 55, "emoji": "🦌"},
+    "🐕Собаки": {"cost": 250, "product": "🛡️", "min_prod": 1, "max_prod": 2, "price_per_unit": 20, "emoji": "🐕"},
+    "🐈Коты": {"cost": 200, "product": "🐁", "min_prod": 1, "max_prod": 3, "price_per_unit": 15, "emoji": "🐈"},
+    "🐓Петухи": {"cost": 180, "product": "🥚", "min_prod": 1, "max_prod": 2, "price_per_unit": 12, "emoji": "🐓"},
+    "🦅Орлы": {"cost": 1000, "product": "🪶", "min_prod": 1, "max_prod": 2, "price_per_unit": 80, "emoji": "🦅"},
+    "🦉Совы": {"cost": 800, "product": "🪶", "min_prod": 1, "max_prod": 2, "price_per_unit": 60, "emoji": "🦉"},
+    "🐧Пингвины": {"cost": 600, "product": "🥚", "min_prod": 1, "max_prod": 2, "price_per_unit": 40, "emoji": "🐧"},
+    "🦢Лебеди": {"cost": 700, "product": "🪶", "min_prod": 1, "max_prod": 2, "price_per_unit": 50, "emoji": "🦢"},
+    "🦜Попугаи": {"cost": 500, "product": "🪶", "min_prod": 1, "max_prod": 3, "price_per_unit": 30, "emoji": "🦜"},
+    "🐦Воробьи": {"cost": 100, "product": "🪶", "min_prod": 2, "max_prod": 5, "price_per_unit": 8, "emoji": "🐦"},
+    "🦇Летучие мыши": {"cost": 300, "product": "🧪", "min_prod": 1, "max_prod": 3, "price_per_unit": 25, "emoji": "🦇"},
+    "🐊Крокодилы": {"cost": 1200, "product": "🧪", "min_prod": 1, "max_prod": 2, "price_per_unit": 100, "emoji": "🐊"},
+    "🦎Ящерицы": {"cost": 400, "product": "🧪", "min_prod": 1, "max_prod": 3, "price_per_unit": 30, "emoji": "🦎"},
+    "🐢Черепахи": {"cost": 500, "product": "🥚", "min_prod": 1, "max_prod": 2, "price_per_unit": 35, "emoji": "🐢"},
+    "🐍Змеи": {"cost": 450, "product": "🧪", "min_prod": 1, "max_prod": 3, "price_per_unit": 30, "emoji": "🐍"},
+    "🦞Лобстеры": {"cost": 600, "product": "🧪", "min_prod": 1, "max_prod": 2, "price_per_unit": 45, "emoji": "🦞"},
+    "🦀Крабы": {"cost": 400, "product": "🧪", "min_prod": 1, "max_prod": 3, "price_per_unit": 25, "emoji": "🦀"},
+    "🐚Улитки": {"cost": 100, "product": "🧪", "min_prod": 2, "max_prod": 5, "price_per_unit": 10, "emoji": "🐚"},
+    "🦋Бабочки": {"cost": 300, "product": "🧪", "min_prod": 1, "max_prod": 3, "price_per_unit": 20, "emoji": "🦋"},
+    "🐞Божьи коровки": {"cost": 150, "product": "🧪", "min_prod": 2, "max_prod": 4, "price_per_unit": 15, "emoji": "🐞"},
+    "🦗Сверчки": {"cost": 100, "product": "🧪", "min_prod": 2, "max_prod": 5, "price_per_unit": 10, "emoji": "🦗"},
+    "🪲Жуки": {"cost": 200, "product": "🧪", "min_prod": 1, "max_prod": 3, "price_per_unit": 15, "emoji": "🪲"},
+    "🐜Муравьи": {"cost": 80, "product": "🧪", "min_prod": 3, "max_prod": 6, "price_per_unit": 8, "emoji": "🐜"},
+    "🪰Мухи": {"cost": 50, "product": "🧪", "min_prod": 3, "max_prod": 8, "price_per_unit": 5, "emoji": "🪰"},
+    "🪟Мотыльки": {"cost": 120, "product": "🧪", "min_prod": 2, "max_prod": 4, "price_per_unit": 12, "emoji": "🪟"},
+    "🐛Гусеницы": {"cost": 80, "product": "🧪", "min_prod": 2, "max_prod": 5, "price_per_unit": 8, "emoji": "🐛"},
+    "🪱Черви": {"cost": 60, "product": "🧪", "min_prod": 3, "max_prod": 7, "price_per_unit": 6, "emoji": "🪱"},
+    "🐌Слизни": {"cost": 70, "product": "🧪", "min_prod": 2, "max_prod": 5, "price_per_unit": 7, "emoji": "🐌"},
+    "🪳Тараканы": {"cost": 80, "product": "🧪", "min_prod": 2, "max_prod": 6, "price_per_unit": 8, "emoji": "🪳"},
+    "🦟Комары": {"cost": 70, "product": "🧪", "min_prod": 3, "max_prod": 7, "price_per_unit": 7, "emoji": "🦟"},
+    "🪰Осы": {"cost": 120, "product": "🧪", "min_prod": 2, "max_prod": 4, "price_per_unit": 12, "emoji": "🪰"},
+    "🦂Скорпионы": {"cost": 500, "product": "🧪", "min_prod": 1, "max_prod": 2, "price_per_unit": 40, "emoji": "🦂"},
+    "🕷️Пауки": {"cost": 200, "product": "🧪", "min_prod": 1, "max_prod": 3, "price_per_unit": 18, "emoji": "🕷️"},
+    "🦂Сенокосцы": {"cost": 150, "product": "🧪", "min_prod": 1, "max_prod": 3, "price_per_unit": 15, "emoji": "🦂"},
+    "🐜Термиты": {"cost": 90, "product": "🧪", "min_prod": 2, "max_prod": 5, "price_per_unit": 9, "emoji": "🐜"}
 }
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///farm.db")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-ADMIN_ID = 8261666607  # ← ТВОЙ ID
+ADMIN_ID = 8261666607
