@@ -8,11 +8,49 @@ class Player:
         self.crops = {crop: 0 for crop in CROP_DATA.keys()}
         self.animals = {animal: 0 for animal in ANIMAL_DATA.keys()}
         self.day = 1
+        self.total_sold = {}  # {название_культуры: количество_проданных}
+        self.unlocked_crops = []  # список разблокированных культур
+        
+        # Разблокируем стартовые культуры (у которых requirement = 0)
+        for crop, data in CROP_DATA.items():
+            if data.get("unlock_requirement", 0) == 0:
+                self.unlocked_crops.append(crop)
+    
+    def check_unlock(self, crop_name):
+        """Проверить, разблокирована ли культура"""
+        if crop_name in self.unlocked_crops:
+            return True
+        
+        data = CROP_DATA[crop_name]
+        requirement = data.get("unlock_requirement", 0)
+        
+        if requirement == 0:
+            self.unlocked_crops.append(crop_name)
+            return True
+        
+        unlock_crop = data.get("unlock_crop")
+        if not unlock_crop:
+            return False
+        
+        sold = self.total_sold.get(unlock_crop, 0)
+        if sold >= requirement:
+            self.unlocked_crops.append(crop_name)
+            return True
+        
+        return False
     
     def plant_crop(self, crop_name):
         data = CROP_DATA[crop_name]
+        
+        # Проверяем, разблокирована ли культура
+        if not self.check_unlock(crop_name):
+            req = data.get("unlock_requirement", 0)
+            unlock_crop = data.get("unlock_crop", "неизвестно")
+            return False, f"🔒 {crop_name} заблокирована! Нужно продать {req} {unlock_crop}"
+        
         if self.money < data["cost"]:
             return False, f"❌ Денег нет! Нужно {data['cost']}$"
+        
         self.money -= data["cost"]
         yield_amount = random.randint(data["min_yield"], data["max_yield"])
         self.crops[crop_name] += yield_amount
@@ -29,7 +67,13 @@ class Player:
                 data = CROP_DATA[crop]
                 base_cost = data["cost"]
                 
-                # ===== НОВАЯ ЭКОНОМИКА =====
+                # Проверяем, разблокирована ли культура
+                if not self.check_unlock(crop):
+                    req = data.get("unlock_requirement", 0)
+                    unlock_crop = data.get("unlock_crop", "неизвестно")
+                    messages.append(f"🔒 {crop} заблокирована! (нужно {req} {unlock_crop})")
+                    continue
+                
                 # Продажа = покупка × 1.2 (+20%)
                 final_price = int(base_cost * 1.2)
                 
@@ -48,17 +92,35 @@ class Player:
                 earn = amount * final_price
                 total_earn += earn
                 
+                # Запоминаем, сколько продали
+                self.total_sold[crop] = self.total_sold.get(crop, 0) + amount
+                
                 messages.append(
                     f"{data['emoji']} {crop}: {amount}шт → +{earn}$ "
                     f"(по {final_price}$ за шт.)"
                 )
                 self.crops[crop] = 0
         
-        if total_earn == 0:
+        if total_earn == 0 and not messages:
             return 0, "😴 Урожая нет!"
         
         self.money += total_earn
-        return total_earn, "\n".join(messages)
+        
+        # Добавляем информацию о разблокировках
+        unlock_msgs = []
+        for crop, data in CROP_DATA.items():
+            if crop not in self.unlocked_crops:
+                req = data.get("unlock_requirement", 0)
+                unlock_crop = data.get("unlock_crop")
+                if unlock_crop and self.total_sold.get(unlock_crop, 0) >= req:
+                    self.unlocked_crops.append(crop)
+                    unlock_msgs.append(f"🔓 Разблокирована: {crop}!")
+        
+        result = "\n".join(messages)
+        if unlock_msgs:
+            result += "\n\n" + "\n".join(unlock_msgs)
+        
+        return total_earn, result
     
     def buy_animal(self, animal_name):
         data = ANIMAL_DATA[animal_name]
@@ -110,6 +172,11 @@ class Player:
                 has_crops = True
         if not has_crops:
             stats.append("  Пусто")
+        
+        stats.append("\n🔓 Разблокировано:")
+        unlocked = [c for c in CROP_DATA.keys() if self.check_unlock(c)]
+        stats.append(f"  {len(unlocked)} из {len(CROP_DATA)} культур")
+        
         stats.append("\n🐄 Животные:")
         has_animals = False
         for animal, amount in self.animals.items():
@@ -120,7 +187,7 @@ class Player:
             stats.append("  Пусто")
         
         if mutation_system.active_mutations:
-            stats.append("\n🧬 **Активные мутации:**")
+            stats.append("\n🧬 Активные мутации:")
             for name, data in mutation_system.active_mutations.items():
                 emoji = mutation_system.mutation_types[name]["emoji"]
                 mult = mutation_system.mutation_types[name]["multiplier"]
