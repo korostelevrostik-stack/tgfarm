@@ -1,5 +1,5 @@
 from aiogram import types
-from aiogram.filters import StateFilter
+from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from handlers.start import players
@@ -36,7 +36,6 @@ async def choose_seed(callback: types.CallbackQuery, state: FSMContext):
     crop_name = callback.data.replace("plant_", "")
     crop_data = CROP_DATA[crop_name]
     
-    # Сохраняем выбранную культуру в состояние
     await state.update_data(crop_name=crop_name, crop_cost=crop_data["cost"])
     await state.set_state(BuySeeds.entering_quantity)
     
@@ -63,7 +62,6 @@ async def process_quantity(message: types.Message, state: FSMContext):
             await message.answer("❌ Введи число больше 0!")
             return
         
-        # Получаем данные из состояния
         data = await state.get_data()
         crop_name = data.get("crop_name")
         crop_cost = data.get("crop_cost")
@@ -73,22 +71,19 @@ async def process_quantity(message: types.Message, state: FSMContext):
             await state.clear()
             return
         
-        # Считаем стоимость
         total_cost = quantity * crop_cost
         
-        # Проверяем, хватает ли денег
         if user.money < total_cost:
             await message.answer(
                 f"❌ Не хватает денег!\n"
                 f"Нужно: {total_cost}$\n"
                 f"У тебя: {user.money}$\n\n"
-                f"Попробуй меньше или заработай денег!",
+                f"Попробуй меньше!",
                 reply_markup=main_menu()
             )
             await state.clear()
             return
         
-        # Покупаем
         user.money -= total_cost
         user.crops[crop_name] += quantity
         
