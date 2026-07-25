@@ -226,7 +226,7 @@ async def reset_all(message: types.Message):
         p.unlocked_crops = []
         # Разблокируем стартовые культуры
         for crop, data in CROP_DATA.items():
-            if data.get("unlock_requirement", 0) == 0:
+            if data.get("unlock_requirement", 0) == 0:500
                 p.unlocked_crops.append(crop)
     await message.answer("✅ Все сброшены!")
 
