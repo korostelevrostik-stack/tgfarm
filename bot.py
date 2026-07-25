@@ -28,18 +28,20 @@ def run_bot():
 
 def run_flask():
     """Запуск Flask сервера для Render"""
-    app.run(host='0.0.0.0', port=10000)
+    app.run(host='0.0.0.0', port=10000, debug=False)
 
 # ========== ЗАПУСК ==========
 if __name__ == "__main__":
     print("🤖 MEGA GARDEN 2.0 запускается...")
     register_all_handlers(dp)
     print("✅ Бот готов!")
-    
+
     # Запускаем бота в отдельном потоке
     bot_thread = threading.Thread(target=run_bot)
+    bot_thread.daemon = True  # Чтобы поток закрывался вместе с главным
     bot_thread.start()
-    
-    # Запускаем Flask в основном потоке (для Render)
+    print("🤖 Бот запущен в фоновом режиме")
+
+    # Запускаем Flask в основном потоке
     print("🌐 Запускаю веб-сервер на порту 10000...")
     run_flask()
