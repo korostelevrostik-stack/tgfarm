@@ -1,88 +1,244 @@
-# handlers/admin.py
 from aiogram import types
 from aiogram.filters import Command
-from config import ADMIN_ID
+from config import ADMIN_ID, CROP_DATA
 from handlers.start import players
-from models import START_MONEY
+import time
 
-async def is_admin(user_id: int) -> bool:
-    return user_id == ADMIN_ID
+# ========== СИСТЕМА МУТАЦИЙ ==========
+class MutationSystem:
+    def __init__(self):
+        self.active_mutations = {}  # {название: {тип, множитель, время}}
+        self.mutation_types = {
+            "клубничная": {"emoji": "🍓", "multiplier": 2.0, "desc": "урожайность x2"},
+            "ядовитая": {"emoji": "☠️", "multiplier": 0.5, "desc": "урожайность x0.5 (для врагов)"},
+            "светящаяся": {"emoji": "✨", "multiplier": 3.0, "desc": "урожайность x3"},
+            "радиационная": {"emoji": "☢️", "multiplier": 5.0, "desc": "урожайность x5 (очень рискованно)"},
+            "золотая": {"emoji": "🌟", "multiplier": 10.0, "desc": "урожайность x10! (редко)"},
+            "гигантская": {"emoji": "🐘", "multiplier": 1.5, "desc": "урожайность x1.5"},
+            "миниатюрная": {"emoji": "🐭", "multiplier": 0.3, "desc": "урожайность x0.3"},
+            "ледяная": {"emoji": "❄️", "multiplier": 0.7, "desc": "урожайность x0.7"},
+            "огненная": {"emoji": "🔥", "multiplier": 4.0, "desc": "урожайность x4"},
+            "призрачная": {"emoji": "👻", "multiplier": 2.5, "desc": "урожайность x2.5"},
+            "неоновая": {"emoji": "💡", "multiplier": 8.0, "desc": "урожайность x8"},
+            "кристальная": {"emoji": "💎", "multiplier": 6.0, "desc": "урожайность x6"},
+            "туманная": {"emoji": "🌫️", "multiplier": 0.9, "desc": "урожайность x0.9"},
+            "солнечная": {"emoji": "☀️", "multiplier": 7.0, "desc": "урожайность x7"},
+            "лунная": {"emoji": "🌙", "multiplier": 3.5, "desc": "урожайность x3.5"},
+            "звёздная": {"emoji": "⭐", "multiplier": 12.0, "desc": "урожайность x12! (легендарно)"},
+            "радужная": {"emoji": "🌈", "multiplier": 4.5, "desc": "урожайность x4.5"},
+            "теневая": {"emoji": "🌑", "multiplier": 0.4, "desc": "урожайность x0.4"},
+            "механическая": {"emoji": "🤖", "multiplier": 9.0, "desc": "урожайность x9"},
+            "древняя": {"emoji": "🏛️", "multiplier": 15.0, "desc": "урожайность x15! (мифическая)"}
+        }
+        self.private_mutations = {}
+    
+    def apply_mutation(self, crop_price, mutation_name):
+        """Применить мутацию к цене"""
+        if mutation_name in self.mutation_types:
+            return int(crop_price * self.mutation_types[mutation_name]["multiplier"])
+        return crop_price
+    
+    def get_active_mutations_text(self):
+        """Получить текст активных мутаций"""
+        if not self.active_mutations and not self.private_mutations:
+            return "🔴 Нет активных мутаций"
+        
+        text = ""
+        if self.active_mutations:
+            text += "🧬 **Глобальные мутации:**\n"
+            for name, data in self.active_mutations.items():
+                emoji = self.mutation_types[name]["emoji"]
+                mult = self.mutation_types[name]["multiplier"]
+                text += f"{emoji} {name}: x{mult} (для всех)\n"
+        
+        if self.private_mutations:
+            text += "\n👑 **Личные мутации:**\n"
+            for name, data in self.private_mutations.items():
+                emoji = self.mutation_types[name]["emoji"]
+                mult = self.mutation_types[name]["multiplier"]
+                text += f"{emoji} {name}: x{mult} (только для админа)\n"
+        
+        return text
+
+mutation_system = MutationSystem()
 
 async def admin_panel(message: types.Message):
-    if not await is_admin(message.from_user.id):
-        await message.answer("⛔ Нет прав!")
+    if message.from_user.id != ADMIN_ID:
         return
     
-    total_players = len(players)
-    total_money = sum(p.money for p in players.values())
+    mutations_text = mutation_system.get_active_mutations_text()
     
     await message.answer(
         f"👑 **Админ-панель**\n\n"
-        f"👤 Игроков: {total_players}\n"
-        f"💰 Всего денег: {total_money}$\n\n"
-        f"📋 Команды:\n"
+        f"👤 Игроков: {len(players)}\n"
+        f"💰 Денег: {sum(p.money for p in players.values())}$\n\n"
+        f"{mutations_text}\n\n"
+        f"📋 **Команды:**\n"
         f"/giveall 100 — дать всем денег\n"
         f"/resetall — сбросить всех\n"
-        f"/players — список игроков",
+        f"/players — список игроков\n"
+        f"/global_mutate <название> — мутация для всех\n"
+        f"/private_mutate <название> — только для тебя\n"
+        f"/mutations — список активных мутаций\n"
+        f"/clearmutations — убрать все мутации\n"
+        f"/mutation_list — все доступные мутации",
         parse_mode="Markdown"
     )
 
-async def give_all_money(message: types.Message):
-    if not await is_admin(message.from_user.id):
+async def global_mutate(message: types.Message):
+    """Запустить мутацию для всех"""
+    if message.from_user.id != ADMIN_ID:
         return
     
     try:
         parts = message.text.split()
         if len(parts) < 2:
-            await message.answer("❌ Использование: /giveall сумма")
+            await message.answer(
+                "❌ Использование: /global_mutate <название>\n"
+                "Доступные мутации:\n" + 
+                "\n".join([f"{data['emoji']} {name} (x{data['multiplier']})" 
+                          for name, data in mutation_system.mutation_types.items()])
+            )
             return
         
-        amount = int(parts[1])
-        
-        if not players:
-            await message.answer("😴 Нет игроков")
+        mutation_name = parts[1].lower()
+        if mutation_name not in mutation_system.mutation_types:
+            await message.answer(f"❌ Мутация '{mutation_name}' не найдена!")
             return
         
-        for player in players.values():
-            player.money += amount
+        # Активируем мутацию для всех
+        mutation_system.active_mutations[mutation_name] = {
+            "started": time.time(),
+            "multiplier": mutation_system.mutation_types[mutation_name]["multiplier"]
+        }
         
-        await message.answer(f"✅ Выдал {amount}$ всем {len(players)} игрокам!")
+        emoji = mutation_system.mutation_types[mutation_name]["emoji"]
+        mult = mutation_system.mutation_types[mutation_name]["multiplier"]
         
-    except ValueError:
-        await message.answer("❌ Сумма должна быть числом!")
+        # Отправляем уведомление всем игрокам
+        for user_id in players.keys():
+            try:
+                await message.bot.send_message(
+                    user_id,
+                    f"🧬 **ГЛОБАЛЬНАЯ МУТАЦИЯ!**\n"
+                    f"{emoji} {mutation_name} x{mult}\n"
+                    f"Все цены на урожай увеличены!"
+                )
+            except:
+                pass
+        
+        await message.answer(
+            f"✅ **Глобальная мутация активирована!**\n"
+            f"{emoji} {mutation_name} x{mult}\n"
+            f"⏳ Действует 1 час (или пока не отключишь)"
+        )
+        
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {e}")
 
-async def reset_all_players(message: types.Message):
-    if not await is_admin(message.from_user.id):
+async def private_mutate(message: types.Message):
+    """Запустить мутацию только для админа"""
+    if message.from_user.id != ADMIN_ID:
         return
     
-    if not players:
-        await message.answer("😴 Нет игроков")
-        return
-    
-    for player in players.values():
-        player.money = START_MONEY
-        player.crops = {crop: 0 for crop in player.crops.keys()}
-        player.animals = {animal: 0 for animal in player.animals.keys()}
-        player.day = 1
-    
-    await message.answer(f"✅ Сбросил {len(players)} игроков!")
+    try:
+        parts = message.text.split()
+        if len(parts) < 2:
+            await message.answer(
+                "❌ Использование: /private_mutate <название>\n"
+                "Доступные мутации:\n" + 
+                "\n".join([f"{data['emoji']} {name} (x{data['multiplier']})" 
+                          for name, data in mutation_system.mutation_types.items()])
+            )
+            return
+        
+        mutation_name = parts[1].lower()
+        if mutation_name not in mutation_system.mutation_types:
+            await message.answer(f"❌ Мутация '{mutation_name}' не найдена!")
+            return
+        
+        mutation_system.private_mutations[mutation_name] = {
+            "started": time.time(),
+            "multiplier": mutation_system.mutation_types[mutation_name]["multiplier"]
+        }
+        
+        emoji = mutation_system.mutation_types[mutation_name]["emoji"]
+        mult = mutation_system.mutation_types[mutation_name]["multiplier"]
+        
+        await message.answer(
+            f"✅ **Личная мутация активирована!**\n"
+            f"{emoji} {mutation_name} x{mult}\n"
+            f"⏳ Только для тебя!"
+        )
+        
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {e}")
 
-async def list_players(message: types.Message):
-    if not await is_admin(message.from_user.id):
+async def list_mutations(message: types.Message):
+    """Показать все доступные мутации"""
+    if message.from_user.id != ADMIN_ID:
         return
     
-    if not players:
-        await message.answer("😴 Нет игроков")
-        return
-    
-    text = "👤 **Список игроков:**\n\n"
-    for i, (user_id, player) in enumerate(players.items(), 1):
-        text += f"{i}. ID: `{user_id}` | 💰 {player.money}$ | 📅 День {player.day}\n"
+    text = "🧬 **Доступные мутации:**\n\n"
+    for name, data in mutation_system.mutation_types.items():
+        text += f"{data['emoji']} **{name}**: x{data['multiplier']} — {data['desc']}\n"
     
     await message.answer(text, parse_mode="Markdown")
+
+async def clear_all_mutations(message: types.Message):
+    """Очистить все мутации"""
+    if message.from_user.id != ADMIN_ID:
+        return
+    
+    mutation_system.active_mutations.clear()
+    mutation_system.private_mutations.clear()
+    await message.answer("✅ Все мутации очищены!")
+
+async def show_active_mutations(message: types.Message):
+    """Показать активные мутации"""
+    if message.from_user.id != ADMIN_ID:
+        return
+    
+    text = mutation_system.get_active_mutations_text()
+    await message.answer(text, parse_mode="Markdown")
+
+# ========== ОСТАЛЬНЫЕ АДМИН-КОМАНДЫ ==========
+async def give_all_money(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    try:
+        amount = int(message.text.split()[1])
+        for p in players.values():
+            p.money += amount
+        await message.answer(f"✅ Выдал {amount}$ всем!")
+    except:
+        await message.answer("❌ /giveall 100")
+
+async def reset_all(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    for p in players.values():
+        p.money = 500
+        p.crops = {c: 0 for c in p.crops}
+        p.animals = {a: 0 for a in p.animals}
+        p.day = 1
+    await message.answer("✅ Все сброшены!")
+
+async def list_players(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    text = "👤 Игроки:\n"
+    for uid, p in players.items():
+        text += f"ID: {uid} | 💰 {p.money}$ | День {p.day}\n"
+    await message.answer(text)
 
 def register_admin(dp):
     dp.message.register(admin_panel, Command("admin"))
     dp.message.register(give_all_money, Command("giveall"))
-    dp.message.register(reset_all_players, Command("resetall"))
+    dp.message.register(reset_all, Command("resetall"))
     dp.message.register(list_players, Command("players"))
+    dp.message.register(global_mutate, Command("global_mutate"))
+    dp.message.register(private_mutate, Command("private_mutate"))
+    dp.message.register(list_mutations, Command("mutation_list"))
+    dp.message.register(clear_all_mutations, Command("clearmutations"))
+    dp.message.register(show_active_mutations, Command("mutations"))
