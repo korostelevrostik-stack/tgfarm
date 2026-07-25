@@ -1,6 +1,6 @@
 import asyncio
-import threading
 from flask import Flask
+from threading import Thread
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from config import TOKEN
@@ -22,26 +22,29 @@ def home():
 def health():
     return "OK", 200
 
-def run_bot():
-    """Запуск бота в отдельном потоке"""
-    asyncio.run(dp.start_polling(bot))
-
-def run_flask():
-    """Запуск Flask сервера для Render"""
-    app.run(host='0.0.0.0', port=10000, debug=False)
-
-# ========== ЗАПУСК ==========
-if __name__ == "__main__":
+# ========== ЗАПУСК БОТА ==========
+async def main():
+    """Главная асинхронная функция"""
     print("🤖 MEGA GARDEN 2.0 запускается...")
     register_all_handlers(dp)
     print("✅ Бот готов!")
+    
+    # Запускаем поллинг
+    await dp.start_polling(bot)
 
-    # Запускаем бота в отдельном потоке
-    bot_thread = threading.Thread(target=run_bot)
-    bot_thread.daemon = True  # Чтобы поток закрывался вместе с главным
-    bot_thread.start()
-    print("🤖 Бот запущен в фоновом режиме")
+def run_flask():
+    """Запуск Flask в отдельном потоке"""
+    app.run(host='0.0.0.0', port=10000, debug=False, use_reloader=False)
 
-    # Запускаем Flask в основном потоке
-    print("🌐 Запускаю веб-сервер на порту 10000...")
-    run_flask()
+# ========== ЗАПУСК ==========
+if __name__ == "__main__":
+    # Запускаем Flask в отдельном потоке
+    flask_thread = Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    print("🌐 Веб-сервер запущен на порту 10000")
+    
+    # Запускаем бота в основном потоке (асинхронно)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("🛑 Бот остановлен")
