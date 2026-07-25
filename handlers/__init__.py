@@ -1,4 +1,4 @@
-from . import start, plant, harvest, animals, day, stats, admin
+from . import start, plant, harvest, animals, day, stats, admin, minigames
 
 def register_all_handlers(dp):
     start.register_start(dp)
@@ -8,3 +8,4 @@ def register_all_handlers(dp):
     day.register_day(dp)
     stats.register_stats(dp)
     admin.register_admin(dp)
+    minigames.register_minigames(dp)  # ← ДОБАВИЛИ
