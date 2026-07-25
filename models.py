@@ -1,20 +1,44 @@
 import random
 from config import CROP_DATA, ANIMAL_DATA, FOOD_COST_PER_ANIMAL, START_MONEY, SELL_ANIMAL_PRICE
+from database import save_player, load_player
 
 class Player:
-    def __init__(self, user_id):
+    def __init__(self, user_id, load_from_db=True):
         self.id = user_id
+        
+        if load_from_db:
+            data = load_player(user_id)
+            if data:
+                self.money = data['money']
+                self.day = data['day']
+                self.crops = data['crops']
+                self.animals = data['animals']
+                self.total_sold = data['total_sold']
+                self.unlocked_crops = data['unlocked_crops']
+                self.daily_streak = data.get('daily_streak', 0)
+                self.last_daily = data.get('last_daily')
+                return
+        
+        # Новый игрок
         self.money = START_MONEY
         self.crops = {crop: 0 for crop in CROP_DATA.keys()}
         self.animals = {animal: 0 for animal in ANIMAL_DATA.keys()}
         self.day = 1
-        self.total_sold = {}  # {название_культуры: количество_проданных}
-        self.unlocked_crops = []  # список разблокированных культур
+        self.total_sold = {}
+        self.unlocked_crops = []
+        self.daily_streak = 0
+        self.last_daily = None
         
-        # Разблокируем стартовые культуры (у которых requirement = 0)
+        # Разблокируем стартовые культуры
         for crop, data in CROP_DATA.items():
             if data.get("unlock_requirement", 0) == 0:
                 self.unlocked_crops.append(crop)
+        
+        save_player(self)
+    
+    def save(self):
+        """Сохранить изменения в базу"""
+        save_player(self)
     
     def check_unlock(self, crop_name):
         """Проверить, разблокирована ли культура"""
@@ -54,6 +78,7 @@ class Player:
         self.money -= data["cost"]
         yield_amount = random.randint(data["min_yield"], data["max_yield"])
         self.crops[crop_name] += yield_amount
+        self.save()
         return True, f"✅ Посажено! Урожай: {yield_amount} шт."
     
     def harvest_all(self):
@@ -116,6 +141,8 @@ class Player:
                     self.unlocked_crops.append(crop)
                     unlock_msgs.append(f"🔓 Разблокирована: {crop}!")
         
+        self.save()
+        
         result = "\n".join(messages)
         if unlock_msgs:
             result += "\n\n" + "\n".join(unlock_msgs)
@@ -128,6 +155,7 @@ class Player:
             return False, f"❌ Денег нет! Нужно {data['cost']}$"
         self.money -= data["cost"]
         self.animals[animal_name] += 1
+        self.save()
         return True, f"✅ Куплено! Теперь {self.animals[animal_name]} шт."
     
     def collect_products(self):
@@ -143,22 +171,26 @@ class Player:
         if total_earn == 0:
             return 0, "😢 Животных нет!"
         self.money += total_earn
+        self.save()
         return total_earn, "\n".join(messages)
     
     def next_day(self):
         self.day += 1
         total_animals = sum(self.animals.values())
         if total_animals == 0:
+            self.save()
             return f"⏩ День {self.day}\n😴 Животных нет."
         food_cost = total_animals * FOOD_COST_PER_ANIMAL
         if self.money >= food_cost:
             self.money -= food_cost
+            self.save()
             return f"⏩ День {self.day}\n🍽️ Покормил (-{food_cost}$)"
         else:
             for animal in self.animals:
                 if self.animals[animal] > 0:
                     self.animals[animal] -= 1
                     self.money += SELL_ANIMAL_PRICE
+                    self.save()
                     return f"⏩ День {self.day}\n😭 Продал {animal} за {SELL_ANIMAL_PRICE}$"
     
     def get_stats(self):
