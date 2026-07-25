@@ -11,7 +11,6 @@ class BuySeeds(StatesGroup):
     entering_quantity = State()
 
 async def plant_menu(callback: types.CallbackQuery, state: FSMContext):
-    """Показать меню посадки"""
     user = players.get(callback.from_user.id)
     if not user:
         await callback.message.edit_text("❌ /start", reply_markup=main_menu())
@@ -20,21 +19,30 @@ async def plant_menu(callback: types.CallbackQuery, state: FSMContext):
     
     await state.set_state(BuySeeds.choosing_seed)
     await callback.message.edit_text(
-        f"🌾 Выбери семена:\n💰 {user.money}$",
-        reply_markup=seeds_menu()
+        f"🌾 Выбери семена:\n💰 {user.money}$\n\n"
+        f"🔓 Разблокировано: {len(user.unlocked_crops)} из {len(CROP_DATA)}",
+        reply_markup=seeds_menu(user)
     )
     await callback.answer()
 
 async def choose_seed(callback: types.CallbackQuery, state: FSMContext):
-    """Выбор семян → запрос количества"""
     user = players.get(callback.from_user.id)
     if not user:
         await callback.message.edit_text("❌ /start", reply_markup=main_menu())
         await callback.answer()
         return
     
+    if callback.data == "locked":
+        await callback.answer("🔒 Эта культура заблокирована!", show_alert=True)
+        return
+    
     crop_name = callback.data.replace("plant_", "")
     crop_data = CROP_DATA[crop_name]
+    
+    # Проверяем, разблокирована ли культура
+    if not user.check_unlock(crop_name):
+        await callback.answer("🔒 Эта культура заблокирована!", show_alert=True)
+        return
     
     await state.update_data(crop_name=crop_name, crop_cost=crop_data["cost"])
     await state.set_state(BuySeeds.entering_quantity)
@@ -49,7 +57,6 @@ async def choose_seed(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 async def process_quantity(message: types.Message, state: FSMContext):
-    """Обработка введённого количества"""
     user = players.get(message.from_user.id)
     if not user:
         await message.answer("❌ Напиши /start")
@@ -77,8 +84,7 @@ async def process_quantity(message: types.Message, state: FSMContext):
             await message.answer(
                 f"❌ Не хватает денег!\n"
                 f"Нужно: {total_cost}$\n"
-                f"У тебя: {user.money}$\n\n"
-                f"Попробуй меньше!",
+                f"У тебя: {user.money}$",
                 reply_markup=main_menu()
             )
             await state.clear()
@@ -102,7 +108,6 @@ async def process_quantity(message: types.Message, state: FSMContext):
     await state.clear()
 
 async def cancel_buy(message: types.Message, state: FSMContext):
-    """Отмена покупки"""
     await state.clear()
     await message.answer("🚫 Покупка отменена", reply_markup=main_menu())
 
